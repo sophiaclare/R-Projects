@@ -1,0 +1,69 @@
+---
+title: "New Zealand Citizenship by Country of Birth"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+```{r}
+#Loading relevant packages
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(scales)
+
+#Loading the data into RStudio
+citizenship <- read.csv("C:\\Users\\sophi\\OneDrive\\Documents\\R Projects\\granted_citizenship_1949_to_2019.csv")
+
+#First we want to get rid of any NA values, and replace with 0 in order to prevent plotting issues. 
+citizenship[is.na(citizenship)] <- 0
+head(citizenship)
+#Let's also remove the row with TOTAL amount of citizenships.
+citizenship <- filter(citizenship, Country.of.Birth != "TOTAL", .preserve = FALSE)
+
+#Let's find the top 5 countries that people who earned NZ citizenship were born in.
+top_countries <- tail(arrange(citizenship, Total, .by_group= FALSE), 5)
+top_countries
+#Great, now lets plot these totals onto a barplot.
+ggplot(data = top_countries, aes(x = Country.of.Birth, y = Total, fill = Country.of.Birth)) +
+  geom_bar(stat='identity') + 
+  theme_classic() + 
+  labs(x = "Country of Birth", y = "Total Citizenships Granted",
+  title ="Top Five Countries granted New Zealand Citizenship 1949-2019") +
+  theme(legend.position = "none")
+
+#We can also make a piechart.
+
+#First, lets calculate percentages for our labels. 
+total_top <- sum(top_countries$Total)
+top_percentage <- percent(top_countries$Total/total_top)
+
+#Now let's create the pie chart.
+ggplot(data = top_countries, aes(x = "", y = Total, fill=Country.of.Birth)) +
+  geom_bar(stat='identity', width=1, color="white") + 
+  coord_polar("y", start=0) +
+  theme_void() +
+  labs(title ="Top Five Countries granted New Zealand Citizenship 1949-2019", 
+  color = "Country of Birth") +
+  geom_text(aes(label = top_percentage),
+  position = position_stack(vjust = 0.5), color = "white") +
+  guides(fill = guide_legend(title = "Country of Birth")) 
+#Next, lets change it to show the top 5 countries over time.
+
+#We need to change the data from wide to long in order to for the plot to output correctly. 
+top_countries_long <- gather(top_countries, year, value, X1949:X2019, factor_key=TRUE)
+#Lets clean the dates so there is no "X" character in front of the year
+top_countries_long$year <- substring(top_countries_long$year, 2)
+top_countries_long
+# #Lets plot it now.
+top_countries_long$year <- lubridate::ymd(top_countries_long$year, truncated = 2L)
+
+ggplot(data = top_countries_long, aes(x = year, y = value, group=Country.of.Birth)) +
+  geom_line(aes(color=Country.of.Birth), stat='identity') +
+  theme_classic() + 
+  labs(x = "Year", y = "Number of Citizenships",
+  title ="Top Five Countries granted New Zealand Citizenship 1949-2019", 
+  color = "Country of Birth") 
+```
+
